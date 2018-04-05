@@ -1,0 +1,11 @@
+{
+  "statusCode": 200,
+  "body": {
+    "message": "Hello world!",
+    "misc": ["foo", "bar", "baz"]
+  }
+,
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}

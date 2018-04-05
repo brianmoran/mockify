@@ -1,0 +1,10 @@
+{
+  "port": "7001",
+  "routes": [
+    {
+      "path": "/helloworld/{key}",
+      "methods": ["GET", "POST"],
+      "responsePath": "app/response/helloworld/helloworld.json"
+    }
+  ]
+}
