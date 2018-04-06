@@ -18,7 +18,8 @@ API mocks for the minimalist
 }
 ```
 2. Add response files/folders to the *app/responses* directory
-3. Run the app `go run app/cmd/mockify.go`
+3. Build the app inside a docker container (7MB)
+4. Start the docker container `docker run -it -p 0.0.0.0:7001:7001 mockify`
 4. Use Postman or your own microservice to connect to the mock API
 ```
 curl -X GET \
