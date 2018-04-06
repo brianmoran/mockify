@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 	"os"
 	log "github.com/sirupsen/logrus"
+	"github.com/gorilla/mux"
 )
 
 type Route struct {
@@ -26,7 +26,7 @@ type Response struct {
 	Headers map[string]string
 }
 
-func main() {
+func loadConfig() Config {
 	wd, _ := os.Getwd()
 	log.Infof("Looking for routes.json file in  %s/app directory\n", wd)
 	jsonFile, err := ioutil.ReadFile("app/routes.json")
@@ -41,36 +41,47 @@ func main() {
 		log.Errorf("Unable to unmarshall json objects!")
 		os.Exit(2)
 	}
+	return config
+}
+
+func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
+	rawData, err := ioutil.ReadFile(route.ResponsePath)
+	if err != nil {
+		log.Errorf("Unable to open response file %s", route.ResponsePath)
+		os.Exit(3)
+	}
+	var response = Response{}
+	json.Unmarshal(rawData, &response)
+	log.Infof("%+v\n", response)
+
+	for k, v := range response.Headers {
+		w.Header().Add(k, v)
+	}
+
+	w.WriteHeader(response.StatusCode)
+
+	var body []byte
+	body, err = json.Marshal(response.Body)
+	if err!= nil {
+		log.Errorf("Unable to marshall body: %s", response.Body)
+		os.Exit(5)
+	}
+	w.Write(body)
+}
+
+func NewMockify() {
+	config := loadConfig()
 
 	router := mux.NewRouter()
 	for _, route := range config.Routes {
-		router.HandleFunc(route.Path, func(w http.ResponseWriter, r *http.Request) {
-			rawData, err := ioutil.ReadFile(route.ResponsePath)
-			if err != nil {
-				log.Errorf("Unable to open response file %s", route.ResponsePath)
-				os.Exit(3)
-			}
-			var response = Response{}
-			json.Unmarshal(rawData, &response)
-			log.Infof("%+v\n", response)
-
-			for k, v := range response.Headers {
-				w.Header().Add(k, v)
-			}
-
-			w.WriteHeader(response.StatusCode)
-
-			var body []byte
-			body, err = json.Marshal(response.Body)
-			if err!= nil {
-				log.Errorf("Unable to marshall body: %s", response.Body)
-				os.Exit(5)
-			}
-			w.Write(body)
-		}).Methods(route.Methods...)
+		router.HandleFunc(route.Path, route.routeHandler).Methods(route.Methods...)
 	}
 
-	err = http.ListenAndServe("0.0.0.0:"+config.Port, router)
+	err := http.ListenAndServe("0.0.0.0:"+config.Port, router)
 	log.Error(err)
 	os.Exit(6)
+}
+
+func main() {
+	NewMockify()
 }
