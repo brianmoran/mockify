@@ -26,9 +26,8 @@ type Response struct {
 	Headers map[string]string
 }
 
-func loadConfig() Config {
-	wd, _ := os.Getwd()
-	log.Infof("Looking for routes.json file in  %s/app directory\n", wd)
+func loadConfig(path string) Config {
+	log.Infof("Looking for routes.json file in  %s/app directory\n", path)
 	jsonFile, err := ioutil.ReadFile("app/routes.json")
 	if err != nil {
 		log.Errorf("Unable to parse file routes.json")
@@ -70,7 +69,8 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func NewMockify() {
-	config := loadConfig()
+	path, _ := os.Getwd()
+	config := loadConfig(path)
 
 	router := mux.NewRouter()
 	for _, route := range config.Routes {
