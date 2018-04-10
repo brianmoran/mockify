@@ -1,6 +1,8 @@
 # mockify
-API mocks for the minimalist
+API mocks for the minimalist. No more waiting on backend teams to deliver services. Simply map the API call with a response and continue building great software.
 
+## Getting Started
+These instructions will help you get started mocking your API's.
 1. Modify routes.json to suit your needs. The path is loaded into [gorilla/mux](https://github.com/gorilla/mux) so you can use param matching.
 
 *app/routes.json*
@@ -18,9 +20,10 @@ API mocks for the minimalist
 }
 ```
 2. Add response files/folders to the *app/responses* directory
-3. Build the app inside a docker container (7MB)
-4. Start the docker container `docker run -it -p 0.0.0.0:7001:7001 mockify`
-4. Use Postman or your own microservice to connect to the mock API
+Each response file should consist of a *list* of responses. The key is built off of the *method* and *URI*.
+2. Build the app inside a docker container using the provided shell script `docker_install.sh`. The docker container uses only 7MB of memory!
+2. Start the docker container `docker run -it -p 0.0.0.0:7001:7001 mockify`
+2. Use Postman, cURL, or your own microservice to connect to the mock API
 ```
 curl -X GET \
   http://localhost:7001/helloworld/foo
@@ -35,5 +38,12 @@ curl -X GET \
     ]
 }
 ```
-
+3. You can even mock errors
+```
+curl -X GET \
+  http://localhost:7001/helloworld/bar
+{
+    "message": "Something bad happened but you knew that right?"
+}
+```
 ### This is *very* basic and I am looking for suggestions and improvements
