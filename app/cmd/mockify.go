@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -75,6 +76,8 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	response, ok := responseMapping[key]
 	if !ok {
 		log.Errorf("Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(fmt.Sprintf("404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)))
 		return
 	}
 
