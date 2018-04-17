@@ -17,7 +17,6 @@ type Route struct {
 }
 
 type Config struct {
-	Port   string  `json:"port"`
 	Routes []Route `json:"routes"`
 }
 
@@ -107,8 +106,12 @@ func NewMockify() {
 		route.prefetchResponses()
 		router.HandleFunc(route.Path, route.routeHandler).Methods(route.Methods...)
 	}
-
-	err := http.ListenAndServe("0.0.0.0:"+config.Port, router)
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		log.Error("PORT cannot be empty")
+		os.Exit(7)
+	}
+	err := http.ListenAndServe("0.0.0.0:"+port, router)
 	log.Error(err)
 	os.Exit(6)
 }
