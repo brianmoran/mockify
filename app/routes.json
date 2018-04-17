@@ -1,5 +1,4 @@
 {
-  "port": "7001",
   "routes": [
     {
       "path": "/helloworld/{key}",
