@@ -3,39 +3,69 @@ API mocks for the minimalist. No more waiting on backend teams to deliver servic
 
 ## Getting Started
 These instructions will help you get started mocking your API's.
-1. Modify routes.json to suit your needs. The path is loaded into [gorilla/mux](https://github.com/gorilla/mux) so you can use param matching.
+1. Create a mapping file (json) anywhere you'd like. Mockify will check for the variable **MOCKIFY_ROUTES**. If the environment variable does not exist, then Mockify will default to **app/routes.json**
 
-*app/routes.json*
+*Example configuration file*
 ```
 {
-  "port": "7001",
   "routes": [
     {
-      "path": "/helloworld/{key}",
-      "methods": ["GET", "POST"],
-      "responsePath": "app/response/helloworld/helloworld.json"
-    },
-    ...
-  ]
+      "path": "/helloworld/{key}",  //REQUIRED
+      "methods": ["GET", "POST"],  //REQUIRED
+      "responses": [
+        {
+          "methods": ["GET", "POST"],  //REQUIRED
+          "uri": "/helloworld/foo",  //REQUIRED
+          "GET": {
+            "statusCode": 200,  //REQUIRED
+            "body": {
+              "message": "[GET] Hello foo!"  //Include any reponse you want
+            },  //REQUIRED
+            "headers": {
+              "Content-Type": "application/json"
+            }  //REQUIRED
+          },  //REQUIRED
+          "POST": {
+            "statusCode": 200,  //REQUIRED
+            "body": {
+              "message": "[POST] Hello foo!"//Include any reponse you want
+            },  //REQUIRED
+            "headers": {
+              "Content-Type": "application/json"
+            }  //REQUIRED
+          },  //REQUIRED
+          "PUT": {},  //REQUIRED
+          "DELETE": {}  //REQUIRED
+        }
+      ]  //REQUIRED
+    }  //REQUIRED
+  ]  //REQUIRED
 }
 ```
-2. Add response files/folders to the *app/responses* directory
-Each response file should consist of a *list* of responses. The key is built off of the *method* and *URI*.
+2. (Optional) Export the following variables **MOCKIFY_PORT** and **MOCKIFY_ROUTES**
+
 2. Build the app inside a docker container using the provided shell script `docker_install.sh`. The docker container uses only 7MB of memory!
-2. Start the docker container using a specified port
+2. Start the docker container using a specific port and you can override routes.json as well
 ```
-docker run -it -p 0.0.0.0:8001:8001 -e PORT=8001 mockify
+# Use the default port of 8001 and the default app/routes.json file
+docker run -it -p 0.0.0.0:8001:8001 mockify
+
+# or
+
+# Use port 9001, override the app/routes.json file in the container
+docker run -it -p 0.0.0.0:9001:9001 -v ~/Desktop/routes.json:/app/routes.json  -e MOCKIFY_PORT=9001 mockify
 ```
 or non-dockerized
 ```
 go build -o main ./app/cmd/mockify.go
-export PORT=8001
+export MOCKIFY_PORT=8001
+export MOCKIFY_ROUTES=~/Desktop/routes.json
 ./main
 ```
 2. Use Postman, cURL, or your own microservice to connect to the mock API
 ```
 curl -X GET \
-  http://localhost:7001/helloworld/foo
+  http://localhost:8001/helloworld/foo
 ```
 ```
 {
