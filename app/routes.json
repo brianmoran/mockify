@@ -1,9 +1,34 @@
 {
   "routes": [
     {
-      "path": "/helloworld/{key}",
+      "path": "/helloworld/{key}/bar",
       "methods": ["GET", "POST"],
-      "responsePath": "app/response/helloworld/helloworld.json"
+      "responses": [
+        {
+          "methods": ["GET", "POST"],
+          "uri": "/helloworld/foo",
+          "GET": {
+            "statusCode": 200,
+            "body": {
+              "message": "[GET] Hello foo!"
+            },
+            "headers": {
+              "Content-Type": "application/json"
+            }
+          },
+          "POST": {
+            "statusCode": 200,
+            "body": {
+              "message": "[POST] Hello foo!"
+            },
+            "headers": {
+              "Content-Type": "application/json"
+            }
+          },
+          "PUT": {},
+          "DELETE": {}
+        }
+      ]
     }
   ]
 }

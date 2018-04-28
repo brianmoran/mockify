@@ -10,33 +10,36 @@ import (
 	"os"
 )
 
-type Route struct {
-	Path         string   `json:"path"`
-	Methods      []string `json:"methods"`
-	ResponsePath string   `json:"responsePath"`
-}
-
 type Config struct {
 	Routes []Route `json:"routes"`
 }
 
-type Response struct {
-	Method     string      `json:"method"`
+type Route struct {
+	Path      string     `json:"path"`
+	Methods   []string   `json:"methods"`
+	Responses []ResponseConfig `json:"responses"`
+}
+
+type ResponseConfig struct {
+	Methods    []string    `json:"methods"`
 	URI        string      `json:"uri"`
+	Get Response `json:"get"`
+	Post Response `json:"post"`
+	Put Response `json:"put"`
+	Delete Response `json:"delete"`
+}
+
+type Response struct {
 	StatusCode int         `json:"statusCode"`
 	Body       interface{} `json:"body"`
 	Headers    map[string]string
 }
 
-type Responses struct {
-	Responses []Response `json:"responses"`
-}
-
 var responseMapping = make(map[string]Response)
 
-func loadConfig(path string) Config {
-	log.Infof("Looking for routes.json file in  %s/app directory", path)
-	jsonFile, err := ioutil.ReadFile("app/routes.json")
+func loadRoutes(f string) Config {
+	log.Infof("Looking for routes.json file: %s", f)
+	jsonFile, err := ioutil.ReadFile(f)
 	if err != nil {
 		log.Errorf("Unable to parse file routes.json")
 		os.Exit(1)
@@ -51,19 +54,23 @@ func loadConfig(path string) Config {
 	return config
 }
 
-func (route *Route) prefetchResponses() {
-	rawData, err := ioutil.ReadFile(route.ResponsePath)
-	if err != nil {
-		log.Errorf("Unable to open response file %s", route.ResponsePath)
-		os.Exit(3)
-	}
+func (route *Route) createResponses() {
+	log.Infof("%+v", route)
+	for _, response := range route.Responses {
 
-	var responses Responses
-	json.Unmarshal(rawData, &responses)
-
-	for _, r := range responses.Responses {
-		key := r.Method + r.URI
-		responseMapping[key] = r
+		for _, method := range response.Methods {
+			key := method + response.URI
+			switch method {
+			case "GET":
+				responseMapping[key] = response.Get
+			case "POST":
+				responseMapping[key] = response.Post
+			case "PUT":
+				responseMapping[key] = response.Put
+			case "DELETE":
+				responseMapping[key] = response.Delete
+			}
+		}
 	}
 }
 
@@ -98,19 +105,29 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func NewMockify() {
-	path, _ := os.Getwd()
-	config := loadConfig(path)
+	port, ok := os.LookupEnv("MOCKIFY_PORT")
+	if !ok {
+		log.Error("MOCKIFY_PORT not set!")
+		port = "8001"
+	}
+	var config Config
+	routesFile, ok := os.LookupEnv("MOCKIFY_ROUTES")
+	if !ok {
+		log.Info("MOCKIFY_ROUTES not set.")
+		path, _ := os.Getwd()
+		config = loadRoutes(path + "app/routes.json")
+	} else {
+		config = loadRoutes(routesFile)
+	}
 
 	router := mux.NewRouter()
 	for _, route := range config.Routes {
-		route.prefetchResponses()
+		route.createResponses()
 		router.HandleFunc(route.Path, route.routeHandler).Methods(route.Methods...)
 	}
-	port, ok := os.LookupEnv("PORT")
-	if !ok {
-		log.Error("PORT cannot be empty")
-		os.Exit(7)
-	}
+
+	log.Infof("%+v", responseMapping)
+	log.Info("Ready!")
 	err := http.ListenAndServe("0.0.0.0:"+port, router)
 	log.Error(err)
 	os.Exit(6)
