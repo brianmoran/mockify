@@ -1,0 +1,9 @@
+version: '3'
+services:
+  mockify:
+    build: .
+    volumes:
+      - ./app:/app
+    ports:
+      - "8001:8001"
+    command: ["app/cmd/main"]
