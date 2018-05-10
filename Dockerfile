@@ -10,6 +10,3 @@ COPY app /app
 # Build mockify
 RUN go build -o main /app/cmd/mockify.go
 
-# Set env variables
-ENV MOCKIFY_PORT 8001
-ENV MOCKIFY_ROUTES /app/routes.json

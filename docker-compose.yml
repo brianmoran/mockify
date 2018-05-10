@@ -2,8 +2,10 @@ version: '3'
 services:
   mockify:
     build: .
+    env_file:
+      - .env
     volumes:
       - ./app:/app
     ports:
-      - "8001:8001"
+      - "${MOCKIFY_PORT}:${MOCKIFY_PORT}"
     command: ["./main"]
