@@ -44,16 +44,11 @@ These instructions will help you get started mocking your API's.
 ```
 2. (Optional) Export the following variables **MOCKIFY_PORT** and **MOCKIFY_ROUTES**
 
-2. Build the app inside a docker container using the provided shell script `docker_install.sh`. The docker container uses only 7MB of memory!
+2. Build the app inside a docker container by running `docker-compose up`. The docker container uses only 7MB of memory!
 2. Start the docker container using a specific port and you can override routes.json as well
 ```
-# Use the default port of 8001 and the default app/routes.json file
-docker run -it -p 0.0.0.0:8001:8001 mockify
-
-# or
-
-# Use port 9001, override the app/routes.json file in the container
-docker run -it -p 0.0.0.0:9001:9001 -v ~/Desktop/routes.json:/app/routes.json  -e MOCKIFY_PORT=9001 mockify
+MOCKIFY_PORT=8002 docker-compose up # set a specific port
+MOCKIFY_ROUTES=/app/routes-other.js # set a different routes file within the mockify folder as docker will copy it
 ```
 or non-dockerized
 ```
