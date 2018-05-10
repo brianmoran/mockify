@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mockify:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - MOCKIFY_PORT=${MOCKIFY_PORT}
+      - MOCKIFY_ROUTES=${MOCKIFY_ROUTES}
+    volumes:
+      - ./app:/app
+    ports:
+      - "${MOCKIFY_PORT}:${MOCKIFY_PORT}"
+    command: ["./main"]

@@ -1,4 +1,0 @@
-FROM scratch
-COPY app /app
-COPY main /app/cmd/
-CMD ["app/cmd/main"]
