@@ -8,7 +8,6 @@ RUN go get github.com/sirupsen/logrus
 COPY app /app
 
 # Build mockify
-RUN mkdir dist
 RUN go build -o main /app/cmd/mockify.go
 
 # Set env variables
