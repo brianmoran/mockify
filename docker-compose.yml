@@ -6,4 +6,4 @@ services:
       - ./app:/app
     ports:
       - "8001:8001"
-    command: ["app/cmd/main"]
+    command: ["./main"]
