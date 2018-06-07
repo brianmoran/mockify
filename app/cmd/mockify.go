@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -15,18 +16,18 @@ type Config struct {
 }
 
 type Route struct {
-	Path      string     `json:"path"`
-	Methods   []string   `json:"methods"`
+	Path      string           `json:"path"`
+	Methods   []string         `json:"methods"`
 	Responses []ResponseConfig `json:"responses"`
 }
 
 type ResponseConfig struct {
-	Methods    []string    `json:"methods"`
-	URI        string      `json:"uri"`
-	Get Response `json:"get"`
-	Post Response `json:"post"`
-	Put Response `json:"put"`
-	Delete Response `json:"delete"`
+	Methods []string `json:"methods"`
+	URI     string   `json:"uri"`
+	Get     Response `json:"get"`
+	Post    Response `json:"post"`
+	Put     Response `json:"put"`
+	Delete  Response `json:"delete"`
 }
 
 type Response struct {
@@ -115,7 +116,7 @@ func NewMockify() {
 	if !ok {
 		log.Info("MOCKIFY_ROUTES not set.")
 		path, _ := os.Getwd()
-		config = loadRoutes(path + "app/routes.json")
+		config = loadRoutes(path + "/config/routes.json")
 	} else {
 		config = loadRoutes(routesFile)
 	}
@@ -127,7 +128,7 @@ func NewMockify() {
 	}
 
 	log.Infof("%+v", responseMapping)
-	log.Info("Ready on port "+port+"!")
+	log.Info("Ready on port " + port + "!")
 	err := http.ListenAndServe("0.0.0.0:"+port, router)
 	log.Error(err)
 	os.Exit(6)
