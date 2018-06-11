@@ -1,7 +1,7 @@
 {
   "routes": [
     {
-      "path": "/helloworld/{key}/bar",
+      "path": "/helloworld/{key}",
       "methods": ["GET", "POST"],
       "responses": [
         {
@@ -27,6 +27,19 @@
           },
           "PUT": {},
           "DELETE": {}
+        },
+        {
+          "methods": ["GET"],
+          "uri": "/helloworld/bar",
+          "GET": {
+            "statusCode": 400,
+            "body": {
+              "message": "[GET] Hello bar!"
+            },
+            "headers": {
+              "Content-Type": "application/json"
+            }
+          }
         }
       ]
     }
