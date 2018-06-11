@@ -11,4 +11,3 @@ services:
       - ./app:/app
     ports:
       - "${MOCKIFY_PORT}:${MOCKIFY_PORT}"
-    command: ["./main"]
