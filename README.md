@@ -1,6 +1,9 @@
 # mockify
 API mocks for the minimalist. No more waiting on backend teams to deliver services. Simply map the API call with a response and continue building great software.
 
+## tl;dr
+[docker pull brianmoran/mockify](Docker image)
+
 ## Getting Started
 These instructions will help you get started mocking your API's.
 1. Create a mapping file (json) anywhere you'd like. Mockify will check for the variable **MOCKIFY_ROUTES**. If the environment variable does not exist, then Mockify will default to **app/routes.json**
@@ -80,4 +83,3 @@ curl -X GET \
     "message": "Something bad happened but you knew that right?"
 }
 ```
-### This is *very* basic and I am looking for suggestions and improvements
