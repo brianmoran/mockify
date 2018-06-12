@@ -2,7 +2,7 @@
 API mocks for the minimalist. No more waiting on backend teams to deliver services. Simply map the API call with a response and continue building great software.
 
 ## tl;dr
-Pull and run the [image](hub.docker.com/r/brianmoran/mockify/) from Dockerhub
+Pull and run the [image](https://hub.docker.com/r/brianmoran/mockify/) from Dockerhub
 ```
 docker pull brianmoran/mockify
 docker run -it -p 0.0.0.0:8001:8001 -v ~/Desktop/routes-cart.json:/app/routes.json  -e MOCKIFY_PORT=8001 mockify
