@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -34,6 +35,10 @@ type Response struct {
 	StatusCode int         `json:"statusCode"`
 	Body       interface{} `json:"body"`
 	Headers    map[string]string
+}
+
+type ResponseContent struct {
+	Message map[string]string
 }
 
 var responseMapping = make(map[string]Response)
@@ -102,7 +107,16 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Unable to marshall body: %s", response.Body)
 		os.Exit(5)
 	}
-	w.Write(body)
+
+	output := string(body)
+	for k, v := range mux.Vars(r) {
+		kr := fmt.Sprintf("{%s}", k)
+		output = strings.Replace(output, kr, v, -1)
+
+		log.Infof("Replace: %+v by %+v", kr, v)
+	}
+
+	w.Write([]byte(output))
 }
 
 func NewMockify() {
