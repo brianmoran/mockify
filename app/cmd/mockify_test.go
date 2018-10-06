@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http/httptest"
 	"testing"
 )
 
@@ -24,5 +25,36 @@ func TestLoadRoutes(t *testing.T) {
 				t.Fail()
 			}
 		}
+	}
+}
+
+func TestSimpleServer(t *testing.T) {
+	config := loadRoutes("../../config/routes.json")
+	router := setupMockifyRouter(config)
+
+	req := httptest.NewRequest("GET", "/helloworld/bar", nil)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	wantBody := "{\"message\":\"[GET] Hello bar!\"}\n" // json.NewEncoder adds a trailing \n
+	gotBody := rec.Body.String()
+	if gotBody != wantBody {
+		t.Errorf("expected body [%s]; got [%s]", wantBody, gotBody)
+		t.Fail()
+	}
+
+	wantStatusCode := 400
+	gotStatusCode := rec.Result().StatusCode
+	if gotStatusCode != wantStatusCode {
+		t.Errorf("expected statusCode [%d]; got [%d]", wantStatusCode, gotStatusCode)
+		t.Fail()
+	}
+
+	wantContentType := "application/json"
+	gotContentType := rec.HeaderMap.Get("Content-Type")
+	if gotContentType != wantContentType {
+		t.Errorf("expected content type [%s]; got [%s]", wantContentType, gotContentType)
+		t.Fail()
 	}
 }

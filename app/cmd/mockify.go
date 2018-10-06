@@ -120,17 +120,22 @@ func NewMockify() {
 		config = loadRoutes(routesFile)
 	}
 
-	router := mux.NewRouter()
-	for _, route := range config.Routes {
-		route.createResponses()
-		router.HandleFunc(route.Path, route.routeHandler).Methods(route.Methods...)
-	}
+	router := setupMockifyRouter(config)
 
 	log.Infof("%+v", responseMapping)
 	log.Info("Ready on port " + port + "!")
 	err := http.ListenAndServe("0.0.0.0:"+port, router)
 	log.Error(err)
 	os.Exit(6)
+}
+
+func setupMockifyRouter(config Config) *mux.Router {
+	router := mux.NewRouter()
+	for _, route := range config.Routes {
+		route.createResponses()
+		router.HandleFunc(route.Path, route.routeHandler).Methods(route.Methods...)
+	}
+	return router
 }
 
 func main() {
