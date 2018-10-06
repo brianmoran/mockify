@@ -2,24 +2,16 @@ package main
 
 import (
 	"testing"
-	"os"
 )
 
-func TestLoadConfig(t *testing.T) {
-	// Move up (2) dirs
-	os.Chdir("../../")
-	path, _ := os.Getwd()
-	config := loadConfig(path)
-	if config.Port == "" {
-		t.Error("A port is required")
-		t.Fail()
-	}
+func TestLoadRoutes(t *testing.T) {
+	config := loadRoutes("../../config/routes.json")
 	if len(config.Routes) == 0 {
 		t.Error("At least 1 route is required")
 		t.Fail()
 	} else {
 		for _, route := range config.Routes {
-			if route.ResponsePath == "" {
+			if route.Path == "" {
 				t.Error("Route is missing a responsePath")
 				t.Fail()
 			}

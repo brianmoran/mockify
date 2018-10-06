@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -40,16 +39,16 @@ var responseMapping = make(map[string]Response)
 
 func loadRoutes(f string) Config {
 	log.Infof("Looking for routes.json file: %s", f)
-	jsonFile, err := ioutil.ReadFile(f)
+	jsonFile, err := os.Open(f)
 	if err != nil {
-		log.Errorf("Unable to parse file routes.json")
+		log.Errorf("Unable to open file routes.json: [%s]", err)
 		os.Exit(1)
 	}
+	defer jsonFile.Close()
 
 	var config Config
-	json.Unmarshal(jsonFile, &config)
-	if err != nil {
-		log.Errorf("Unable to unmarshall json objects!")
+	if err := json.NewDecoder(jsonFile).Decode(&config); err != nil {
+		log.Errorf("Unable to decode json object![%s]", err)
 		os.Exit(2)
 	}
 	return config
@@ -58,7 +57,6 @@ func loadRoutes(f string) Config {
 func (route *Route) createResponses() {
 	log.Infof("%+v", route)
 	for _, response := range route.Responses {
-
 		for _, method := range response.Methods {
 			key := method + response.URI
 			switch method {
@@ -84,7 +82,7 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		log.Errorf("Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(fmt.Sprintf("404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)))
+		fmt.Fprintf(w, "404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		return
 	}
 
@@ -96,26 +94,27 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(response.StatusCode)
 
-	var body []byte
-	body, err := json.Marshal(response.Body)
-	if err != nil {
-		log.Errorf("Unable to marshall body: %s", response.Body)
+	if err := json.NewEncoder(w).Encode(response.Body); err != nil {
+		log.Errorf("Unable to marshal body: %v", response.Body)
 		os.Exit(5)
 	}
-	w.Write(body)
 }
 
 func NewMockify() {
 	port, ok := os.LookupEnv("MOCKIFY_PORT")
 	if !ok {
-		log.Error("MOCKIFY_PORT not set!")
 		port = "8001"
+		log.Error(fmt.Sprintf("MOCKIFY_PORT not set; using default [%s]!", port))
 	}
 	var config Config
 	routesFile, ok := os.LookupEnv("MOCKIFY_ROUTES")
 	if !ok {
 		log.Info("MOCKIFY_ROUTES not set.")
-		path, _ := os.Getwd()
+		path, err := os.Getwd()
+		if err != nil {
+			log.Errorf("unable to get working directory: [%s]", err)
+			return
+		}
 		config = loadRoutes(path + "/config/routes.json")
 	} else {
 		config = loadRoutes(routesFile)
