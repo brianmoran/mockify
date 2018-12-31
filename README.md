@@ -3,8 +3,9 @@ Simple API mocking. No more waiting on backend teams to deliver services. Simply
 continue building great software.
 
 **Update**
-* Added */list* endpoint (GET) to describe the current state of the `ResponseMapping`
+* Added `/list` endpoint (GET) to describe the current state of the `ResponseMapping`
 * Added `/add` endpoint (POST)
+* Added `/delete` endpoint (POST) to delete an existing mock by key (`/helloworld/foo|GET`)
 * Added postman collection & environment
 
 ## tl;dr

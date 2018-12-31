@@ -27,6 +27,7 @@ type Response struct {
 }
 
 var ResponseMapping = make(map[string]Response)
+var Router = mux.NewRouter()
 
 func loadRoutes(f string) []Route {
 	log.Infof("Looking for routes.json file: %s", f)
@@ -115,6 +116,39 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	route.createResponses()
+	Router.HandleFunc(route.Route, route.routeHandler).Methods(route.Methods...)
+
+}
+
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	var errString string
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		errString = "unable to parse request body"
+		log.Error(errString)
+		w.WriteHeader(500)
+		w.Write([]byte(errString))
+	}
+
+	if body == nil {
+		errString = "body is empty"
+		log.Error(errString)
+		w.WriteHeader(500)
+		w.Write([]byte(errString))
+	}
+	key := string(body)
+
+	_, ok := ResponseMapping[key]
+	if !ok {
+		log.Infof("key: %s doesn't exist", key)
+		w.WriteHeader(200)
+		w.Write([]byte("nothing to delete"))
+		return
+	}
+
+	delete(ResponseMapping, key)
+	w.WriteHeader(200)
+	w.Write([]byte("mock deleted"))
 }
 
 func NewMockify() {
@@ -137,27 +171,25 @@ func NewMockify() {
 		routes = loadRoutes(routesFile)
 	}
 
-	router := setupMockifyRouter(routes)
+	setupMockifyRouter(routes)
 
 	log.Infof("%+v", ResponseMapping)
 	log.Info("Ready on port " + port + "!")
-	err := http.ListenAndServe("0.0.0.0:"+port, router)
+	err := http.ListenAndServe("0.0.0.0:"+port, Router)
 	log.Error(err)
 	os.Exit(6)
 }
 
-func setupMockifyRouter(routes []Route) *mux.Router {
-	router := mux.NewRouter()
-
+func setupMockifyRouter(routes []Route) {
 	//add builtin routes
-	router.HandleFunc("/list", listHandler).Methods(http.MethodGet)
-	router.HandleFunc("/add", addHandler).Methods(http.MethodPost)
+	Router.HandleFunc("/list", listHandler).Methods(http.MethodGet)
+	Router.HandleFunc("/add", addHandler).Methods(http.MethodPost)
+	Router.HandleFunc("/delete", deleteHandler).Methods(http.MethodPost)
 
 	for _, route := range routes {
 		route.createResponses()
-		router.HandleFunc(route.Route, route.routeHandler).Methods(route.Methods...)
+		Router.HandleFunc(route.Route, route.routeHandler).Methods(route.Methods...)
 	}
-	return router
 }
 
 func main() {

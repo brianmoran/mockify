@@ -26,12 +26,12 @@ func TestLoadRoutes(t *testing.T) {
 
 func TestSimpleServer(t *testing.T) {
 	config := loadRoutes("../../config/routes.json")
-	router := setupMockifyRouter(config)
+	setupMockifyRouter(config)
 
 	req := httptest.NewRequest("GET", "/helloworld/foo", nil)
 	rec := httptest.NewRecorder()
 
-	router.ServeHTTP(rec, req)
+	Router.ServeHTTP(rec, req)
 
 	wantBody := "{\"message\":\"Welcome to Mockify!\"}\n" // json.NewEncoder adds a trailing \n
 	gotBody := rec.Body.String()
