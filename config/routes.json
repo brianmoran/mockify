@@ -1,47 +1,40 @@
-{
-  "routes": [
-    {
-      "path": "/helloworld/{key}",
-      "methods": ["GET", "POST"],
-      "responses": [
-        {
-          "methods": ["GET", "POST"],
-          "uri": "/helloworld/foo",
-          "GET": {
-            "statusCode": 200,
-            "body": {
-              "message": "[GET] Hello foo!"
-            },
-            "headers": {
-              "Content-Type": "application/json"
-            }
-          },
-          "POST": {
-            "statusCode": 200,
-            "body": {
-              "message": "[POST] Hello foo!"
-            },
-            "headers": {
-              "Content-Type": "application/json"
-            }
-          },
-          "PUT": {},
-          "DELETE": {}
+[
+  {
+    "route": "/helloworld/{key}",
+    "methods": ["get"],
+    "responses": [
+      {
+        "uri": "/helloworld/foo",
+        "method": "get",
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
         },
-        {
-          "methods": ["GET"],
-          "uri": "/helloworld/bar",
-          "GET": {
-            "statusCode": 400,
-            "body": {
-              "message": "[GET] Hello bar!"
-            },
-            "headers": {
-              "Content-Type": "application/json"
-            }
+        "body": {
+          "message": "Welcome to Mockify!"
+        }
+      },
+      {
+        "uri": "/helloworld/bar",
+        "method": "get",
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "foo": {
+            "key1": 1,
+            "key2": true,
+            "key3": [
+              {
+                "foo": "foo",
+                "bar": true,
+                "baz": [1, 2, "3"]
+              }
+            ]
           }
         }
-      ]
-    }
-  ]
-}
+      }
+    ]
+  }
+]

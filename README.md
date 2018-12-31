@@ -1,5 +1,25 @@
 # mockify
-API mocks for the minimalist. No more waiting on backend teams to deliver services. Simply map the API call with a response and continue building great software.
+Simple API mocking. No more waiting on backend teams to deliver services. Simply map the API call with a response and 
+continue building great software.
+
+**Update**
+* Added */list* endpoint to describe the current state of the `ResponseMapping`
+```
+{
+    "/helloworld/foo|GET": {
+        "uri": "/helloworld/foo",
+        "method": "get",
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": {
+            "message": "Welcome to Mockify!"
+        }
+    }
+}
+```
+
 
 ## tl;dr
 Pull and run the [image](https://hub.docker.com/r/brianmoran/mockify/) from Dockerhub
@@ -14,41 +34,46 @@ These instructions will help you get started mocking your API's.
 
 *Example configuration file*
 ```
-{
-  "routes": [
-    {
-      "path": "/helloworld/{key}",  //REQUIRED
-      "methods": ["GET", "POST"],  //REQUIRED
-      "responses": [
-        {
-          "methods": ["GET", "POST"],  //REQUIRED
-          "uri": "/helloworld/foo",  //REQUIRED
-          "GET": {
-            "statusCode": 200,  //REQUIRED
-            "body": {
-              "message": "[GET] Hello foo!"  //Include any reponse you want
-            },  //REQUIRED
-            "headers": {
-              "Content-Type": "application/json"
-            }  //REQUIRED
-          },  //REQUIRED
-          "POST": {
-            "statusCode": 200,  //REQUIRED
-            "body": {
-              "message": "[POST] Hello foo!"//Include any reponse you want
-            },  //REQUIRED
-            "headers": {
-              "Content-Type": "application/json"
-            }  //REQUIRED
-          },  //REQUIRED
-          "PUT": {},  //REQUIRED
-          "DELETE": {}  //REQUIRED
+[
+  {
+    "route": "/helloworld/{key}",
+    "methods": ["get"],
+    "responses": [
+      {
+        "uri": "/helloworld/foo",
+        "method": "get",
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "message": "Welcome to Mockify!"
         }
-      ]  //REQUIRED
-    }  //REQUIRED
-  ]  //REQUIRED
-}
-```
+      },
+      {
+        "uri": "/helloworld/bar",
+        "method": "get",
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "foo": {
+            "key1": 1,
+            "key2": true,
+            "key3": [
+              {
+                "foo": "foo",
+                "bar": true,
+                "baz": [1, 2, "3"]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+]
 2. (Optional) Export the following variables **MOCKIFY_PORT** and **MOCKIFY_ROUTES**
 
 2. Build the app inside a docker container by running `docker-compose up`. The docker container uses only 7MB of memory!
