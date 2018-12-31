@@ -1,0 +1,80 @@
+{
+	"info": {
+		"_postman_id": "7d7ccf60-26db-4670-95c4-0d4d51ad2191",
+		"name": "mockify",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "/helloworld/foo",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{url}}/helloworld/foo",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"helloworld",
+						"foo"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/list",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{url}}/list",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"list"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/add",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"route\": \"/foo/{id}\",\n\t\"methods\": [\"get\"],\n\t\"responses\": [\n\t\t{\n\t\t\t\"uri\": \"/foo/1\",\n\t\t\t\"method\": \"get\",\n\t\t\t\"statusCode\": 200,\n\t\t\t\"headers\": {\"Content-Type\": \"application/json\"},\n\t\t\t\"body\": {\n\t\t\t\t\"foo\": \"bar\"\n\t\t\t}\n\t\t}\t\n\t]\n}"
+				},
+				"url": {
+					"raw": "{{url}}/add",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"add"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

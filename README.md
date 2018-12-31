@@ -3,23 +3,9 @@ Simple API mocking. No more waiting on backend teams to deliver services. Simply
 continue building great software.
 
 **Update**
-* Added */list* endpoint to describe the current state of the `ResponseMapping`
-```
-{
-    "/helloworld/foo|GET": {
-        "uri": "/helloworld/foo",
-        "method": "get",
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": {
-            "message": "Welcome to Mockify!"
-        }
-    }
-}
-```
-
+* Added */list* endpoint (GET) to describe the current state of the `ResponseMapping`
+* Added `/add` endpoint (POST)
+* Added postman collection & environment
 
 ## tl;dr
 Pull and run the [image](https://hub.docker.com/r/brianmoran/mockify/) from Dockerhub

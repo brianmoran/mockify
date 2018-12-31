@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -52,6 +53,8 @@ func (route *Route) createResponses() {
 	}
 }
 
+
+
 func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infof("REQUEST: %+v %+v", r.Method, r.RequestURI)
 
@@ -92,6 +95,28 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func addHandler(w http.ResponseWriter, r *http.Request) {
+	var errString string
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		errString = "unable to parse request body"
+		log.Error(errString)
+		w.WriteHeader(500)
+		w.Write([]byte(errString))
+	}
+
+	route := Route{}
+	err = json.Unmarshal(body, &route)
+	if err != nil {
+		errString = "unable to unmarshal body"
+		log.Error(errString)
+		w.WriteHeader(500)
+		w.Write([]byte(errString))
+	}
+
+	route.createResponses()
+}
+
 func NewMockify() {
 	port, ok := os.LookupEnv("MOCKIFY_PORT")
 	if !ok {
@@ -125,7 +150,8 @@ func setupMockifyRouter(routes []Route) *mux.Router {
 	router := mux.NewRouter()
 
 	//add builtin routes
-	router.HandleFunc("/list", listHandler).Methods("GET")
+	router.HandleFunc("/list", listHandler).Methods(http.MethodGet)
+	router.HandleFunc("/add", addHandler).Methods(http.MethodPost)
 
 	for _, route := range routes {
 		route.createResponses()
