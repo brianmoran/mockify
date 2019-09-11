@@ -72,16 +72,23 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infof("RESPONSE: %+v", response)
 
 	//write headers
-	headers := response.Headers
-	for k, v := range headers {
+	for k, v := range response.Headers {
 		w.Header().Add(k, v)
 	}
 
 	w.WriteHeader(response.StatusCode)
-
-	if err := json.NewEncoder(w).Encode(response.Body); err != nil {
-		log.Errorf("Unable to marshal body: %v", response.Body)
-		os.Exit(5)
+	isJson := false
+	_, ok = response.Headers["Content-Type"]
+	if ok && response.Headers["Content-Type"] == "application/json" {
+		isJson = true
+	}
+	if !isJson {
+		w.Write([]byte(response.Body["message"].(string)))
+	} else {
+		if err := json.NewEncoder(w).Encode(response.Body); err != nil {
+				log.Errorf("Unable to marshal body: %v", response.Body)
+				os.Exit(5)
+			}
 	}
 }
 
