@@ -21,6 +21,7 @@ type Route struct {
 type Response struct {
 	URI string `json:"uri"`
 	Method string `json:"method"`
+	RequestBody string `json:"requestBody"`
 	StatusCode int      `json:"statusCode"`
 	Headers map[string]string `json:"headers"`
 	Body   map[string]interface{} `json:"body"`
@@ -49,20 +50,34 @@ func loadRoutes(f string) []Route {
 func (route *Route) createResponses() {
 	log.Infof("%+v", route)
 	for _, response := range route.Responses {
-		key := fmt.Sprintf("%s|%s", response.URI, strings.ToUpper(response.Method))
+		key := fmt.Sprintf("%s|%s|%s", response.URI, strings.ToUpper(response.Method), strings.ToUpper(response.RequestBody))
 		ResponseMapping[key] = response
 	}
 }
 
+func getResponse(method, uri, body string) *Response {
+	for _, response := range ResponseMapping {
+		if uri == response.URI && method == response.Method {
+			if response.RequestBody == "" {
+				return &response
+			} else if strings.Contains(body, response.RequestBody) {
+				return &response
+			}
+		}
+	}
+	return nil
+}
 
 
 func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infof("REQUEST: %+v %+v", r.Method, r.RequestURI)
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		bodyBytes = []byte("")
+	}
 
-	log.Infof("ResponseMapping: %+v", ResponseMapping)
-	key := fmt.Sprintf("%s|%s", r.RequestURI, r.Method)
-	response, ok := ResponseMapping[key]
-	if !ok {
+	response := getResponse(r.Method, r.RequestURI, string(bodyBytes))
+	if response == nil {
 		log.Errorf("Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
@@ -78,7 +93,7 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(response.StatusCode)
 	isJson := false
-	_, ok = response.Headers["Content-Type"]
+	_, ok := response.Headers["Content-Type"]
 	if ok && response.Headers["Content-Type"] == "application/json" {
 		isJson = true
 	}
