@@ -8,42 +8,46 @@ import (
 	"os"
 	"strings"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/json-iterator/go"
 )
 
 type Route struct {
-	Route     string `json:"route"`
+	Route     string `yaml:"route" json:"route"`
 	Methods   []string
-	Responses []Response `json:"responses"`
+	Responses []Response `yaml:"responses" json:"responses"`
 }
 
 type Response struct {
-	URI string `json:"uri"`
-	Method string `json:"method"`
-	RequestBody string `json:"requestBody"`
-	StatusCode int      `json:"statusCode"`
-	Headers map[string]string `json:"headers"`
-	Body   map[string]interface{} `json:"body"`
+	URI         string                 `yaml:"uri" json:"uri"`
+	Method      string                 `yaml:"method" json:"method"`
+	RequestBody string                 `yaml:"requestBody" json:"requestBody"`
+	StatusCode  int                    `yaml:"requestBody" json:"requestBody"`
+	Headers     map[string]string      `yaml:"headers" json:"headers"`
+	Body        map[string]interface{} `yaml:"body" json:"body"`
 }
 
 var ResponseMapping = make(map[string]Response)
 var Router = mux.NewRouter()
 
 func loadRoutes(f string) []Route {
-	log.Infof("Looking for routes.json file: %s", f)
-	jsonFile, err := os.Open(f)
-	if err != nil {
-		log.Errorf("Unable to open file routes.json: [%s]", err)
-		os.Exit(1)
-	}
-	defer jsonFile.Close()
+	log.Infof("Looking for routes.yaml file: %s", f)
 
-	var routes []Route
-	if err := json.NewDecoder(jsonFile).Decode(&routes); err != nil {
-		log.Errorf("Unable to decode json object![%s]", err)
-		os.Exit(2)
+	routes := make([]Route, 0)
+
+	yamlFile, err := ioutil.ReadFile(f)
+	if err != nil {
+		log.Printf("yamlFile.Get err   #%v ", err)
 	}
+	err = yaml.Unmarshal(yamlFile, &routes)
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+
 	return routes
 }
 
@@ -67,7 +71,6 @@ func getResponse(method, uri, body string) *Response {
 	}
 	return nil
 }
-
 
 func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infof("REQUEST: %+v %+v", r.Method, r.RequestURI)
@@ -100,17 +103,31 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 	if !isJson {
 		w.Write([]byte(response.Body["message"].(string)))
 	} else {
-		if err := json.NewEncoder(w).Encode(response.Body); err != nil {
-				log.Errorf("Unable to marshal body: %v", response.Body)
-				os.Exit(5)
-			}
+		var jsonx = jsoniter.ConfigCompatibleWithStandardLibrary
+		jsonB, err := jsonx.Marshal(response.Body)
+		if err != nil {
+			log.Error("Response could not be converted to JSON")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 Response could not be converted to JSON")
+			return
+		}
+		w.Write(jsonB)
 	}
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
+	var jsonx = jsoniter.ConfigCompatibleWithStandardLibrary
+
 	w.Header().Add("Content-Type", "application/json")
 
-	jsonB, _ := json.Marshal(ResponseMapping)
+	//jsonB, err := json.Marshal(ResponseMapping)
+	jsonB, err := jsonx.Marshal(ResponseMapping)
+	if err != nil {
+		fmt.Println("Error", err.Error())
+		w.WriteHeader(500)
+		log.Errorf("unable to list response mapping")
+		w.Write([]byte("unable to list response mapping"))
+	}
 	if _, err := w.Write(jsonB); err != nil {
 		w.WriteHeader(500)
 		log.Errorf("unable to list response mapping")
@@ -188,7 +205,7 @@ func NewMockify() {
 			log.Errorf("unable to get working directory: [%s]", err)
 			return
 		}
-		routes = loadRoutes(path + "/config/routes.json")
+		routes = loadRoutes(path + "/config/routes.yaml")
 	} else {
 		routes = loadRoutes(routesFile)
 	}

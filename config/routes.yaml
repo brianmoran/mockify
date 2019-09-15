@@ -1,0 +1,59 @@
+---
+- route: "/helloworld/{key}"
+  methods:
+    - GET
+  responses:
+    - uri: "/helloworld/foo"
+      method: GET
+      statusCode: 200
+      headers:
+        Content-Type: application/json
+      body:
+        message: Welcome to Mockify!
+    - uri: "/helloworld/bar"
+      method: GET
+      statusCode: 200
+      headers:
+        Content-Type: application/json
+      body:
+        foo:
+          key1: 1
+          key2: true
+          key3:
+            - foo: foo
+              bar: true
+              baz:
+                - 1
+                - 2
+                - '3'
+- route: "/api/mcp"
+  methods:
+    - POST
+  responses:
+    - uri: "/api/mcp"
+      method: POST
+      requestBody: abc
+      statusCode: 200
+      headers:
+        Content-Type: application/xml
+      body:
+        message: <?xml version="1.0" encoding="UTF-8"?><note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't
+          forget me this weekend!</body></note>
+    - uri: "/api/mcp"
+      method: POST
+      requestBody: def
+      statusCode: 201
+      headers:
+        Content-Type: application/json
+      body:
+        foo:
+          key1: 1
+          key2: true
+          key3:
+            - foo: foo
+              bar: true
+              baz:
+                - 1
+                - 2
+                - '3'
+
