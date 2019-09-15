@@ -20,6 +20,7 @@ These instructions will help you get started mocking your API's.
 1. Create a mapping file (json) anywhere you'd like. Mockify will check for the variable **MOCKIFY_ROUTES**. If the environment variable does not exist, then Mockify will default to **app/routes.json**
 
 *Example configuration file*
+See [The Configuration Readme](https://github.com/brianmoran/mockify/tree/master/config/README.md)
 ```
 [
   {
