@@ -1,6 +1,6 @@
 # Configuration (examples and explanations)
 
-The configuration file is JSON and is an array of route objects that mochky will respond to.  
+The configuration file is YAML and is an array of route objects that mochky will respond to.  
 
 Each routes has 3 fields: 
    - route: the basic URI with any variables portions of it defined by `{}`. 

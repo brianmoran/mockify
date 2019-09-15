@@ -62,6 +62,7 @@ See [The Configuration Readme](https://github.com/brianmoran/mockify/tree/master
     ]
   }
 ]
+```
 2. (Optional) Export the following variables **MOCKIFY_PORT** and **MOCKIFY_ROUTES**
 
 2. Build the app inside a docker container by running `docker-compose up`. The docker container uses only 7MB of memory!
@@ -100,3 +101,6 @@ curl -X GET \
     "message": "Something bad happened but you knew that right?"
 }
 ```
+
+---
+Here is a postman collection that includes all internal calls as well as the tests that you see in the example configuration: [https://www.getpostman.com/collections/2daab06a399baa2c8576](https://www.getpostman.com/collections/2daab06a399baa2c8576)
