@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Route struct {
@@ -26,7 +26,7 @@ type Response struct {
 	URI         string                 `yaml:"uri" json:"uri"`
 	Method      string                 `yaml:"method" json:"method"`
 	RequestBody string                 `yaml:"requestBody" json:"requestBody"`
-	StatusCode  int                    `yaml:"requestBody" json:"requestBody"`
+	StatusCode  int                    `yaml:"statusCode" json:"statusCode"`
 	Headers     map[string]string      `yaml:"headers" json:"headers"`
 	Body        map[string]interface{} `yaml:"body" json:"body"`
 }
@@ -190,6 +190,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("mock deleted"))
 }
 
+// NewMockify sets up a new instance/http server
 func NewMockify() {
 	port, ok := os.LookupEnv("MOCKIFY_PORT")
 	if !ok {
@@ -200,12 +201,7 @@ func NewMockify() {
 	routesFile, ok := os.LookupEnv("MOCKIFY_ROUTES")
 	if !ok {
 		log.Info("MOCKIFY_ROUTES not set.")
-		path, err := os.Getwd()
-		if err != nil {
-			log.Errorf("unable to get working directory: [%s]", err)
-			return
-		}
-		routes = loadRoutes(path + "/config/routes.yaml")
+		os.Exit(1)
 	} else {
 		routes = loadRoutes(routesFile)
 	}
@@ -232,5 +228,6 @@ func setupMockifyRouter(routes []Route) {
 }
 
 func main() {
+	os.Setenv("MOCKIFY_ROUTES", "/Users/moranb1/repos/brianmoran/mockify/config/routes.yaml")
 	NewMockify()
 }
