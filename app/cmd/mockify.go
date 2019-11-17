@@ -228,6 +228,12 @@ func setupMockifyRouter(routes []Route) {
 }
 
 func main() {
-	os.Setenv("MOCKIFY_ROUTES", "/Users/moranb1/repos/brianmoran/mockify/config/routes.yaml")
+	path, exist := os.LookupEnv("MOCKIFY_ROUTES")
+	if exist {
+		log.Info(fmt.Sprintf("MOCKIFY_ROUTES set. [%s]", path))
+	} else {
+		log.Info(fmt.Sprintf("MOCKIFY_ROUTES not set. Default ./config/routes.yaml"))
+		os.Setenv("MOCKIFY_ROUTES", "./config/routes.yaml")
+	}
 	NewMockify()
 }
