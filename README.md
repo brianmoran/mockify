@@ -86,8 +86,7 @@ export MOCKIFY_ROUTES=~/Desktop/routes.json
 ```
 2. Use Postman, cURL, or your own microservice to connect to the mock API
 ```
-curl -X GET \
-  http://localhost:8001/helloworld/foo
+curl -X GET http://localhost:8001/helloworld/foo
 ```
 ```
 {
