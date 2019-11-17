@@ -73,6 +73,10 @@ MOCKIFY_ROUTES=/app/routes-other.js # set a different routes file within the moc
 ```
 or non-dockerized
 ```
+go get github.com/gorilla/mux
+go get github.com/json-iterator/go
+go get github.com/sirupsen/logrus
+go get gopkg.in/yaml.v2
 go build -o main ./app/cmd/mockify.go
 export MOCKIFY_PORT=8001
 export MOCKIFY_ROUTES=~/Desktop/routes.json
