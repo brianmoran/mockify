@@ -1,3 +1,5 @@
+# Looking for contributors to help make mockify better
+
 # mockify
 Simple API mocking. No more waiting on backend teams to deliver services. Simply map the API call with a response and 
 continue building great software.
