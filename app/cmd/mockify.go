@@ -23,12 +23,12 @@ type Route struct {
 }
 
 type Response struct {
-	URI         string                 `yaml:"uri" json:"uri"`
-	Method      string                 `yaml:"method" json:"method"`
-	RequestBody string                 `yaml:"requestBody" json:"requestBody"`
-	StatusCode  int                    `yaml:"statusCode" json:"statusCode"`
-	Headers     map[string]string      `yaml:"headers" json:"headers"`
-	Body        map[string]interface{} `yaml:"body" json:"body"`
+	URI         string            `yaml:"uri" json:"uri"`
+	Method      string            `yaml:"method" json:"method"`
+	RequestBody string            `yaml:"requestBody" json:"requestBody"`
+	StatusCode  int               `yaml:"statusCode" json:"statusCode"`
+	Headers     map[string]string `yaml:"headers" json:"headers"`
+	Body        interface{}       `yaml:"body" json:"body"`
 }
 
 var ResponseMapping = make(map[string]Response)
@@ -101,7 +101,7 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 		isJson = true
 	}
 	if !isJson {
-		w.Write([]byte(response.Body["message"].(string)))
+		w.Write([]byte(response.Body.(string)))
 	} else {
 		var jsonx = jsoniter.ConfigCompatibleWithStandardLibrary
 		jsonB, err := jsonx.Marshal(response.Body)
