@@ -56,4 +56,15 @@
                 - 1
                 - 2
                 - '3'
+    - uri: "/api/mcp"
+      method: POST
+      requestBody: "body-have-higher-priority-over-header"
+      requestHeader: "Authorization: foo-bar"
+      statusCode: 302
+      headers:
+        Content-Type: application/json
+      body:
+        win:
+          key1: 1
+          key2: true
 

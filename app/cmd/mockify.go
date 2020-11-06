@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -23,20 +24,35 @@ type Route struct {
 }
 
 type Response struct {
-	URI         string            `yaml:"uri" json:"uri"`
-	Method      string            `yaml:"method" json:"method"`
-	RequestBody string            `yaml:"requestBody" json:"requestBody"`
-	StatusCode  int               `yaml:"statusCode" json:"statusCode"`
-	Headers     map[string]string `yaml:"headers" json:"headers"`
-	Body        interface{}       `yaml:"body" json:"body"`
+	URI           string            `yaml:"uri" json:"uri"`
+	Method        string            `yaml:"method" json:"method"`
+	RequestHeader string            `yaml:"requestHeader" json:"requestHeader"`
+	RequestBody   string            `yaml:"requestBody" json:"requestBody"`
+	StatusCode    int               `yaml:"statusCode" json:"statusCode"`
+	Headers       map[string]string `yaml:"headers" json:"headers"`
+	Body          interface{}       `yaml:"body" json:"body"`
 }
 
-var ResponseMapping = make(map[string]Response)
-var Router = mux.NewRouter()
+var (
+	HighestPriorityResponseMappings = make(map[string]Response)
+	SecondPriorityResponseMappings  = make(map[string]Response)
+	LowestPriorityResponseMappings  = make(map[string]Response)
+	Router                          = mux.NewRouter()
+)
+
+const (
+	invalidHeaderChars = "[:\\s]*"
+)
 
 func printError(format string, v ...interface{}) {
 	log.SetPrefix("[ERROR] ")
 	log.Printf(format, v...)
+	log.SetPrefix("")
+}
+
+func printRegisteredResponse(key string, response Response) {
+	log.SetPrefix("[RESPONSE] ")
+	log.Printf("[%s] -> %+v", key, response)
 	log.SetPrefix("")
 }
 
@@ -58,38 +74,88 @@ func loadRoutes(f string) []Route {
 }
 
 func (route *Route) createResponses() {
-	log.Printf("%+v", route)
+	headerRegEx := regexp.MustCompile(invalidHeaderChars)
+
 	for _, response := range route.Responses {
-		key := fmt.Sprintf("%s|%s|%s", response.URI, strings.ToUpper(response.Method), strings.ToUpper(response.RequestBody))
-		ResponseMapping[key] = response
+		upperMethod := strings.ToUpper(response.Method)
+		upperURI := strings.ToUpper(response.URI)
+
+		addToLowestPriority := true
+
+		if response.RequestBody != "" {
+			upperBody := strings.ToUpper(response.RequestBody)
+			key := fmt.Sprintf("%s|%s|%s|BODY", upperURI, upperMethod, upperBody)
+			printRegisteredResponse(key, response)
+			HighestPriorityResponseMappings[key] = response
+			addToLowestPriority = false
+		}
+
+		// Add to second priority if we have a requestHeader
+		// A route can have both a requestHeader and a requestBody, and these will be added to both mapping slices
+		if response.RequestHeader != "" {
+			upperHeader := strings.ToUpper(response.RequestHeader)
+			upperHeader = strings.TrimSpace(upperHeader)
+			upperHeader = headerRegEx.ReplaceAllString(upperHeader, "")
+			key := fmt.Sprintf("%s|%s|%s|HEADER", upperURI, upperMethod, upperHeader)
+			printRegisteredResponse(key, response)
+			SecondPriorityResponseMappings[key] = response
+			addToLowestPriority = false
+		}
+
+		if addToLowestPriority {
+			key := fmt.Sprintf("%s|%s|LOWEST", upperURI, upperMethod)
+			printRegisteredResponse(key, response)
+			LowestPriorityResponseMappings[key] = response
+		}
 	}
 }
 
-func getResponse(method, uri, body string) *Response {
-	for _, response := range ResponseMapping {
-		if uri == response.URI && method == response.Method {
-			if response.RequestBody == "" {
-				return &response
-			} else if strings.Contains(body, response.RequestBody) {
+func getResponse(method, uri, body string, requestHeaders http.Header) *Response {
+	// Check if we have a match in the highest priority splice
+	for _, response := range HighestPriorityResponseMappings {
+		if uri == response.URI && method == response.Method && strings.Contains(body, response.RequestBody) {
+			return &response
+		}
+	}
+
+	// Check if we have a match in the second highest priority splice
+	for _, response := range SecondPriorityResponseMappings {
+		if uri == response.URI && method == response.Method && response.RequestHeader != "" {
+			suppliedMatchHeader := strings.Split(response.RequestHeader, ":")
+			if len(suppliedMatchHeader) > 2 {
+				log.Fatalf(`Wrongfully use of requestHeader! Should only be "key: value", you had: '%v'!`, suppliedMatchHeader)
+			}
+			suppliedMatchHeader[0] = strings.TrimSpace(suppliedMatchHeader[0])
+			suppliedMatchHeader[1] = strings.TrimSpace(suppliedMatchHeader[1])
+			found := requestHeaders.Get(suppliedMatchHeader[0])
+			if found != "" && found == suppliedMatchHeader[1] {
 				return &response
 			}
 		}
 	}
+
+	// Check if we have a match in the lowest priority splice
+	for _, response := range LowestPriorityResponseMappings {
+		if uri == response.URI && method == response.Method {
+			return &response
+		}
+	}
+
 	return nil
 }
 
 func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("REQUEST: %+v %+v", r.Method, r.RequestURI)
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		bodyBytes = []byte("")
 	}
+	log.Printf("REQUEST: %+v %+v [%+v] [%+v]", r.Method, r.RequestURI, string(bodyBytes), r.Header)
 
-	response := getResponse(r.Method, r.RequestURI, string(bodyBytes))
+	response := getResponse(r.Method, r.RequestURI, string(bodyBytes), r.Header)
 	if response == nil {
 		printError("Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
+		_, _ = fmt.Fprintf(w, "404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		return
 	}
 
@@ -107,37 +173,36 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 		isJson = true
 	}
 	if !isJson {
-		w.Write([]byte(response.Body.(string)))
+		_, _ = w.Write([]byte(response.Body.(string)))
 	} else {
 		var jsonx = jsoniter.ConfigCompatibleWithStandardLibrary
 		jsonB, err := jsonx.Marshal(response.Body)
 		if err != nil {
 			printError("Response could not be converted to JSON")
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "500 Response could not be converted to JSON")
+			_, _ = fmt.Fprint(w, "500 Response could not be converted to JSON")
 			return
 		}
-		w.Write(jsonB)
+		_, _ = w.Write(jsonB)
 	}
 }
 
-func listHandler(w http.ResponseWriter, r *http.Request) {
+func listHandler(w http.ResponseWriter, _ *http.Request) {
 	var jsonx = jsoniter.ConfigCompatibleWithStandardLibrary
 
 	w.Header().Add("Content-Type", "application/json")
 
-	//jsonB, err := json.Marshal(ResponseMapping)
-	jsonB, err := jsonx.Marshal(ResponseMapping)
+	jsonB, err := jsonx.Marshal(HighestPriorityResponseMappings)
 	if err != nil {
 		fmt.Println("Error", err.Error())
 		w.WriteHeader(500)
 		printError("unable to list response mapping")
-		w.Write([]byte("unable to list response mapping"))
+		_, _ = w.Write([]byte("unable to list response mapping"))
 	}
 	if _, err := w.Write(jsonB); err != nil {
 		w.WriteHeader(500)
 		printError("unable to list response mapping")
-		w.Write([]byte("unable to list response mapping"))
+		_, _ = w.Write([]byte("unable to list response mapping"))
 	}
 }
 
@@ -148,7 +213,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 		errString = "unable to parse request body"
 		printError(errString)
 		w.WriteHeader(500)
-		w.Write([]byte(errString))
+		_, _ = w.Write([]byte(errString))
 	}
 
 	route := Route{}
@@ -157,7 +222,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 		errString = "unable to unmarshal body"
 		printError(errString)
 		w.WriteHeader(500)
-		w.Write([]byte(errString))
+		_, _ = w.Write([]byte(errString))
 	}
 
 	route.createResponses()
@@ -172,28 +237,28 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 		errString = "unable to parse request body"
 		printError(errString)
 		w.WriteHeader(500)
-		w.Write([]byte(errString))
+		_, _ = w.Write([]byte(errString))
 	}
 
 	if body == nil {
 		errString = "body is empty"
 		printError(errString)
 		w.WriteHeader(500)
-		w.Write([]byte(errString))
+		_, _ = w.Write([]byte(errString))
 	}
 	key := string(body)
 
-	_, ok := ResponseMapping[key]
+	_, ok := HighestPriorityResponseMappings[key]
 	if !ok {
 		log.Printf("key: %s doesn't exist", key)
 		w.WriteHeader(200)
-		w.Write([]byte("nothing to delete"))
+		_, _ = w.Write([]byte("nothing to delete"))
 		return
 	}
 
-	delete(ResponseMapping, key)
+	delete(HighestPriorityResponseMappings, key)
 	w.WriteHeader(200)
-	w.Write([]byte("mock deleted"))
+	_, _ = w.Write([]byte("mock deleted"))
 }
 
 // NewMockify sets up a new instance/http server
@@ -214,7 +279,6 @@ func NewMockify() {
 
 	setupMockifyRouter(routes)
 
-	log.Printf("%+v", ResponseMapping)
 	log.Printf("Ready on port %s!", port)
 	if err := http.ListenAndServe("0.0.0.0:"+port, Router); err != nil {
 		log.Fatal(err)
@@ -240,7 +304,7 @@ func main() {
 		log.Printf(fmt.Sprintf("MOCKIFY_ROUTES set. [%s]", path))
 	} else {
 		log.Printf(fmt.Sprintf("MOCKIFY_ROUTES not set. Default ./config/routes.yaml"))
-		os.Setenv("MOCKIFY_ROUTES", "./config/routes.yaml")
+		_ = os.Setenv("MOCKIFY_ROUTES", "./config/routes.yaml")
 	}
 	NewMockify()
 }
