@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -34,8 +34,14 @@ type Response struct {
 var ResponseMapping = make(map[string]Response)
 var Router = mux.NewRouter()
 
+func printError(format string, v ...interface{}) {
+	log.SetPrefix("[ERROR] ")
+	log.Printf(format, v...)
+	log.SetPrefix("")
+}
+
 func loadRoutes(f string) []Route {
-	log.Infof("Looking for routes.yaml file: %s", f)
+	log.Printf("Looking for routes in file: %s", f)
 
 	routes := make([]Route, 0)
 
@@ -52,7 +58,7 @@ func loadRoutes(f string) []Route {
 }
 
 func (route *Route) createResponses() {
-	log.Infof("%+v", route)
+	log.Printf("%+v", route)
 	for _, response := range route.Responses {
 		key := fmt.Sprintf("%s|%s|%s", response.URI, strings.ToUpper(response.Method), strings.ToUpper(response.RequestBody))
 		ResponseMapping[key] = response
@@ -73,7 +79,7 @@ func getResponse(method, uri, body string) *Response {
 }
 
 func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infof("REQUEST: %+v %+v", r.Method, r.RequestURI)
+	log.Printf("REQUEST: %+v %+v", r.Method, r.RequestURI)
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		bodyBytes = []byte("")
@@ -81,13 +87,13 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := getResponse(r.Method, r.RequestURI, string(bodyBytes))
 	if response == nil {
-		log.Errorf("Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
+		printError("Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "404 Response not mapped for method %s and URI %s", r.Method, r.RequestURI)
 		return
 	}
 
-	log.Infof("RESPONSE: %+v", response)
+	log.Printf("RESPONSE: %+v", response)
 
 	//write headers
 	for k, v := range response.Headers {
@@ -106,7 +112,7 @@ func (route *Route) routeHandler(w http.ResponseWriter, r *http.Request) {
 		var jsonx = jsoniter.ConfigCompatibleWithStandardLibrary
 		jsonB, err := jsonx.Marshal(response.Body)
 		if err != nil {
-			log.Error("Response could not be converted to JSON")
+			printError("Response could not be converted to JSON")
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "500 Response could not be converted to JSON")
 			return
@@ -125,12 +131,12 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("Error", err.Error())
 		w.WriteHeader(500)
-		log.Errorf("unable to list response mapping")
+		printError("unable to list response mapping")
 		w.Write([]byte("unable to list response mapping"))
 	}
 	if _, err := w.Write(jsonB); err != nil {
 		w.WriteHeader(500)
-		log.Errorf("unable to list response mapping")
+		printError("unable to list response mapping")
 		w.Write([]byte("unable to list response mapping"))
 	}
 }
@@ -140,7 +146,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		errString = "unable to parse request body"
-		log.Error(errString)
+		printError(errString)
 		w.WriteHeader(500)
 		w.Write([]byte(errString))
 	}
@@ -149,7 +155,7 @@ func addHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &route)
 	if err != nil {
 		errString = "unable to unmarshal body"
-		log.Error(errString)
+		printError(errString)
 		w.WriteHeader(500)
 		w.Write([]byte(errString))
 	}
@@ -164,14 +170,14 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		errString = "unable to parse request body"
-		log.Error(errString)
+		printError(errString)
 		w.WriteHeader(500)
 		w.Write([]byte(errString))
 	}
 
 	if body == nil {
 		errString = "body is empty"
-		log.Error(errString)
+		printError(errString)
 		w.WriteHeader(500)
 		w.Write([]byte(errString))
 	}
@@ -179,7 +185,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, ok := ResponseMapping[key]
 	if !ok {
-		log.Infof("key: %s doesn't exist", key)
+		log.Printf("key: %s doesn't exist", key)
 		w.WriteHeader(200)
 		w.Write([]byte("nothing to delete"))
 		return
@@ -195,12 +201,12 @@ func NewMockify() {
 	port, ok := os.LookupEnv("MOCKIFY_PORT")
 	if !ok {
 		port = "8001"
-		log.Error(fmt.Sprintf("MOCKIFY_PORT not set; using default [%s]!", port))
+		printError("MOCKIFY_PORT not set; using default [%s]!", port)
 	}
 	var routes []Route
 	routesFile, ok := os.LookupEnv("MOCKIFY_ROUTES")
 	if !ok {
-		log.Info("MOCKIFY_ROUTES not set.")
+		log.Print("MOCKIFY_ROUTES not set.")
 		os.Exit(1)
 	} else {
 		routes = loadRoutes(routesFile)
@@ -208,10 +214,11 @@ func NewMockify() {
 
 	setupMockifyRouter(routes)
 
-	log.Infof("%+v", ResponseMapping)
-	log.Info("Ready on port " + port + "!")
-	err := http.ListenAndServe("0.0.0.0:"+port, Router)
-	log.Error(err)
+	log.Printf("%+v", ResponseMapping)
+	log.Printf("Ready on port %s!", port)
+	if err := http.ListenAndServe("0.0.0.0:"+port, Router); err != nil {
+		log.Fatal(err)
+	}
 	os.Exit(6)
 }
 
@@ -230,9 +237,9 @@ func setupMockifyRouter(routes []Route) {
 func main() {
 	path, exist := os.LookupEnv("MOCKIFY_ROUTES")
 	if exist {
-		log.Info(fmt.Sprintf("MOCKIFY_ROUTES set. [%s]", path))
+		log.Printf(fmt.Sprintf("MOCKIFY_ROUTES set. [%s]", path))
 	} else {
-		log.Info(fmt.Sprintf("MOCKIFY_ROUTES not set. Default ./config/routes.yaml"))
+		log.Printf(fmt.Sprintf("MOCKIFY_ROUTES not set. Default ./config/routes.yaml"))
 		os.Setenv("MOCKIFY_ROUTES", "./config/routes.yaml")
 	}
 	NewMockify()

@@ -1,7 +1,6 @@
 FROM golang:1 as builder
 
 RUN go get github.com/gorilla/mux
-RUN go get github.com/sirupsen/logrus
 
 COPY . /go/src/mockify/
 WORKDIR /go/src/mockify/
