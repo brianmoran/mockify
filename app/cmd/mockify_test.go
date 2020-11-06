@@ -6,7 +6,7 @@ import (
 )
 
 func TestLoadRoutes(t *testing.T) {
-	routes := loadRoutes("../../config/routes.json")
+	routes := loadRoutes("../../config/routes.yaml")
 	if len(routes) == 0 {
 		t.Error("at least 1 route is required")
 		t.Fail()
@@ -25,7 +25,7 @@ func TestLoadRoutes(t *testing.T) {
 }
 
 func TestSimpleServer(t *testing.T) {
-	config := loadRoutes("../../config/routes.json")
+	config := loadRoutes("../../config/routes.yaml")
 	setupMockifyRouter(config)
 
 	req := httptest.NewRequest("GET", "/helloworld/foo", nil)
@@ -33,7 +33,7 @@ func TestSimpleServer(t *testing.T) {
 
 	Router.ServeHTTP(rec, req)
 
-	wantBody := "{\"message\":\"Welcome to Mockify!\"}\n" // json.NewEncoder adds a trailing \n
+	wantBody := "{\"message\":\"Welcome to Mockify!\"}"
 	gotBody := rec.Body.String()
 	if gotBody != wantBody {
 		t.Errorf("expected body [%s]; got [%s]", wantBody, gotBody)
@@ -48,7 +48,7 @@ func TestSimpleServer(t *testing.T) {
 	}
 
 	wantContentType := "application/json"
-	gotContentType := rec.HeaderMap.Get("Content-Type")
+	gotContentType := rec.Header().Get("Content-Type")
 	if gotContentType != wantContentType {
 		t.Errorf("expected content type [%s]; got [%s]", wantContentType, gotContentType)
 		t.Fail()
