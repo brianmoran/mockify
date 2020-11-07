@@ -12,7 +12,7 @@ Each route must have 3 fields:
       - `uri` [`string`]: the URI that this reponses is used for (no variable parts here)
       - `method` [`string`]: REST method for the response
       - _(Optional)_ `requestBody` [`string`]: If any part of the request body matches this string, that response will be used (only used if it has a value, can't be an empty string. Have the highest matching priority)
-      - _(Optional)_ `requestHeader` [`string`]: Must be in the format `Key: Value` (i.e. `Authorization: foo-bar`). If `Key` is found in the request that response will be used (only used if it has a value, can't be an empty string. Have the second highest matching priority)
+      - _(Optional)_ `requestHeader` [`string`]: Must be in the format `Key: Value` (i.e. `Authorization: foo-bar`). If `Key` is found in the request, and `Key`'s value is `Value` that response will be used (only used if it has a value, can't be an empty string. Have the second highest matching priority)
       - `statusCode` [`integer`]: Response status code
       - `headers` [`object`]: Response headers
       - `body` [`object`]: Response body
