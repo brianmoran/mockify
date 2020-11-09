@@ -33,11 +33,12 @@ type Response struct {
 	Body          interface{}       `yaml:"body" json:"body"`
 }
 
+// For more how the different response mappings are used, read the README-file in the config folder
 var (
-	HighestPriorityResponseMappings = make(map[string]Response)
-	SecondPriorityResponseMappings  = make(map[string]Response)
-	LowestPriorityResponseMappings  = make(map[string]Response)
-	Router                          = mux.NewRouter()
+	RequestBodyResponseMappings    = make(map[string]Response)
+	RequestHeaderResponseMappings  = make(map[string]Response)
+	LowestPriorityResponseMappings = make(map[string]Response)
+	Router                         = mux.NewRouter()
 )
 
 const (
@@ -86,7 +87,7 @@ func (route *Route) createResponses() {
 			upperBody := strings.ToUpper(response.RequestBody)
 			key := fmt.Sprintf("%s|%s|%s|BODY", upperURI, upperMethod, upperBody)
 			printRegisteredResponse(key, response)
-			HighestPriorityResponseMappings[key] = response
+			RequestBodyResponseMappings[key] = response
 			addToLowestPriority = false
 		}
 
@@ -98,7 +99,7 @@ func (route *Route) createResponses() {
 			upperHeader = headerRegEx.ReplaceAllString(upperHeader, "")
 			key := fmt.Sprintf("%s|%s|%s|HEADER", upperURI, upperMethod, upperHeader)
 			printRegisteredResponse(key, response)
-			SecondPriorityResponseMappings[key] = response
+			RequestHeaderResponseMappings[key] = response
 			addToLowestPriority = false
 		}
 
@@ -112,14 +113,14 @@ func (route *Route) createResponses() {
 
 func getResponse(method, uri, body string, requestHeaders http.Header) *Response {
 	// Check if we have a match in the highest priority splice
-	for _, response := range HighestPriorityResponseMappings {
+	for _, response := range RequestBodyResponseMappings {
 		if uri == response.URI && method == response.Method && strings.Contains(body, response.RequestBody) {
 			return &response
 		}
 	}
 
 	// Check if we have a match in the second highest priority splice
-	for _, response := range SecondPriorityResponseMappings {
+	for _, response := range RequestHeaderResponseMappings {
 		if uri == response.URI && method == response.Method && response.RequestHeader != "" {
 			suppliedMatchHeader := strings.Split(response.RequestHeader, ":")
 			if len(suppliedMatchHeader) > 2 {
@@ -192,7 +193,7 @@ func listHandler(w http.ResponseWriter, _ *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 
-	jsonB, err := jsonx.Marshal(HighestPriorityResponseMappings)
+	jsonB, err := jsonx.Marshal(RequestBodyResponseMappings)
 	if err != nil {
 		fmt.Println("Error", err.Error())
 		w.WriteHeader(500)
@@ -248,7 +249,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	key := string(body)
 
-	_, ok := HighestPriorityResponseMappings[key]
+	_, ok := RequestBodyResponseMappings[key]
 	if !ok {
 		log.Printf("key: %s doesn't exist", key)
 		w.WriteHeader(200)
@@ -256,7 +257,7 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	delete(HighestPriorityResponseMappings, key)
+	delete(RequestBodyResponseMappings, key)
 	w.WriteHeader(200)
 	_, _ = w.Write([]byte("mock deleted"))
 }
